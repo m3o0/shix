@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "shix"
 version = "0.1.0"
 description = "Find and run shell commands using natural language, powered by your shell history and local AI"
-readme = {text = "Find and run shell commands using natural language.", content-type = "text/plain"}
+readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
