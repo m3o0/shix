@@ -42,7 +42,7 @@ def _copy_to_clipboard(text: str) -> bool:
         return False
 
 
-def _make_chip(text: str, index: int, style: str = "cyan") -> str:
+def _make_chip(text: str, index: int) -> tuple[str, str, str]:
     """Create a single chip/pill string with box-drawing characters."""
     label = f" {index}  {text} "
     top = f"╭{'─' * len(label)}╮"
@@ -51,13 +51,22 @@ def _make_chip(text: str, index: int, style: str = "cyan") -> str:
     return top, mid, bot
 
 
+def _truncate_cmd(cmd: str, max_width: int = 50) -> str:
+    """Truncate a command for chip display."""
+    display = cmd.split("\n")[0]
+    if len(display) > max_width:
+        display = display[:max_width - 1] + "…"
+    return display
+
+
 def _render_chips(items: list[DisplayItem]) -> None:
     """Render command suggestions as chips/pills in rows."""
     if not items:
         return
 
     width = console.width - 4  # padding
-    chips = [_make_chip(item.command, i + 1) for i, item in enumerate(items)]
+    display_cmds = [_truncate_cmd(item.command) for item in items]
+    chips = [_make_chip(dc, i + 1) for i, dc in enumerate(display_cmds)]
 
     # Group chips into rows that fit terminal width
     rows: list[list[int]] = []
@@ -80,29 +89,38 @@ def _render_chips(items: list[DisplayItem]) -> None:
     # Render each row
     for row in rows:
         top_line = "  "
-        mid_line = "  "
         bot_line = "  "
         for idx in row:
             t, m, b = chips[idx]
             top_line += t + "  "
-            mid_line += m + "  "
             bot_line += b + "  "
 
         console.print(Text(top_line, style=BORDER_STYLE))
-        # Mid line with colored number and white command
-        console.print(_style_mid_line(mid_line, items, row))
+        console.print(_style_mid_line(display_cmds, row))
         console.print(Text(bot_line, style=BORDER_STYLE))
 
 
+def _render_compact(items: list[DisplayItem]) -> None:
+    """Render commands as a compact numbered list for many results."""
+    idx_width = len(str(len(items)))
+    max_cmd = console.width - idx_width - 8
+    for i, item in enumerate(items, 1):
+        display = _truncate_cmd(item.command, max_cmd)
+        line = Text("  ")
+        line.append(f" {i:>{idx_width}} ", style="bold yellow")
+        line.append(f" {display}", style="bold white")
+        console.print(line)
 
-def _style_mid_line(raw: str, items: list[DisplayItem], row_indices: list[int]) -> Text:
+
+
+def _style_mid_line(display_cmds: list[str], row_indices: list[int]) -> Text:
     """Style the middle line of chips with colored numbers and commands."""
     result = Text()
     result.append("  ", style="")
 
     for idx in row_indices:
         num = str(idx + 1)
-        cmd = items[idx].command
+        cmd = display_cmds[idx]
         result.append("│", style=BORDER_STYLE)
         result.append(f" {num} ", style="bold yellow")
         result.append(f" {cmd} ", style="bold white")
@@ -146,7 +164,10 @@ def _display_and_pick(items: list[DisplayItem], query: str, mode: str, missing_t
         console.print()
         return
 
-    _render_chips(items)
+    if len(items) <= 5:
+        _render_chips(items)
+    else:
+        _render_compact(items)
 
     # Separator + prompt
     console.print()
@@ -186,6 +207,7 @@ def _display_and_pick(items: list[DisplayItem], query: str, mode: str, missing_t
 @app.command()
 def ask(
     query: str = typer.Argument(..., help="Describe what you want to do"),
+    top: int = typer.Option(5, "--top", "-t", help="Number of suggestions to show"),
     local: bool = typer.Option(False, "--local", "-l", help="Use local Ollama model instead of offline search"),
     model: str = typer.Option("qwen2.5:7b", "--model", "-m", help="Ollama model (only with --local)"),
     base_url: str = typer.Option("http://localhost:11434", "--url", "-u", help="Ollama server URL (only with --local)"),
@@ -206,16 +228,16 @@ def ask(
     clean_history = sanitize(history)
 
     if local:
-        _run_local(clean_history, query, model, base_url)
+        _run_local(clean_history, query, model, base_url, top)
     else:
-        _run_offline(history, query)
+        _run_offline(history, query, top)
 
 
-def _run_offline(history: list[str], query: str) -> None:
+def _run_offline(history: list[str], query: str, top: int = 5) -> None:
     """Fuzzy search through history — no model, instant results."""
     from shix.fuzzy import fuzzy_search, _tokenize
 
-    results = fuzzy_search(history, query)
+    results = fuzzy_search(history, query, max_results=top)
 
     query_tokens = _tokenize(query)
     history_blob = " ".join(history).lower()
@@ -228,7 +250,7 @@ def _run_offline(history: list[str], query: str) -> None:
     _display_and_pick(items, query, "offline", missing if missing else None)
 
 
-def _run_local(history: list[str], query: str, model: str, base_url: str) -> None:
+def _run_local(history: list[str], query: str, model: str, base_url: str, top: int = 5) -> None:
     """Query local Ollama model for suggestions."""
     try:
         from shix.ollama import get_suggestions
@@ -246,6 +268,7 @@ def _run_local(history: list[str], query: str, model: str, base_url: str) -> Non
                 query=query,
                 model=model,
                 base_url=base_url,
+                count=top,
             )
         except Exception as e:
             error_msg = str(e)

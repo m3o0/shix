@@ -16,7 +16,7 @@ You are shix, a shell command assistant. The user will describe what they want t
 and you will suggest shell commands based on their shell history and request.
 
 Rules:
-- Return exactly 3 suggestions, ranked by relevance
+- Return the number of suggestions the user asks for, ranked by relevance
 - Each suggestion has a "command" and a short "explanation" (one sentence)
 - Only suggest commands that are likely to work on the user's system based on their history
 - If the history shows usage of specific tools (e.g. docker, kubectl, git), prefer those
@@ -25,8 +25,7 @@ Rules:
 Output format (JSON array):
 [
   {"command": "...", "explanation": "..."},
-  {"command": "...", "explanation": "..."},
-  {"command": "...", "explanation": "..."}
+  ...
 ]
 """
 
@@ -37,14 +36,14 @@ class Suggestion:
     explanation: str
 
 
-def _build_prompt(history: list[str], query: str) -> str:
+def _build_prompt(history: list[str], query: str, count: int = 5) -> str:
     """Build the user prompt with history context and query."""
     history_block = "\n".join(history[-200:])  # trim to fit context
     return (
         f"Here are my recent shell commands for context:\n"
         f"```\n{history_block}\n```\n\n"
         f"I want to: {query}\n\n"
-        f"Suggest 3 commands as a JSON array."
+        f"Suggest {count} commands as a JSON array."
     )
 
 
@@ -66,7 +65,7 @@ def _parse_suggestions(text: str) -> list[Suggestion]:
         return []
 
     suggestions = []
-    for item in data[:3]:
+    for item in data:
         if isinstance(item, dict) and "command" in item:
             suggestions.append(
                 Suggestion(
@@ -82,12 +81,13 @@ def get_suggestions(
     query: str,
     model: str = DEFAULT_MODEL,
     base_url: str = DEFAULT_BASE_URL,
+    count: int = 5,
 ) -> list[Suggestion]:
     """Query Ollama for command suggestions.
 
     Raises httpx.ConnectError if Ollama is not running.
     """
-    prompt = _build_prompt(history, query)
+    prompt = _build_prompt(history, query, count)
 
     response = httpx.post(
         f"{base_url}/api/chat",
