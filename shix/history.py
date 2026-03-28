@@ -46,8 +46,8 @@ def _parse_zsh_history_line(raw: str) -> str | None:
     return line
 
 
-def _read_file_tail(path: Path, max_lines: int) -> list[str]:
-    """Read the last `max_lines` lines from a file, handling encoding issues."""
+def _read_file_tail(path: Path, max_lines: int = 0) -> list[str]:
+    """Read lines from a file. If max_lines > 0, return only the last N lines."""
     try:
         raw = path.read_bytes()
     except (OSError, PermissionError):
@@ -60,10 +60,10 @@ def _read_file_tail(path: Path, max_lines: int) -> list[str]:
         text = raw.decode("latin-1")
 
     lines = text.splitlines()
-    return lines[-max_lines:]
+    return lines[-max_lines:] if max_lines > 0 else lines
 
 
-def read_history(max_lines: int = 500) -> list[str]:
+def read_history(max_lines: int = 0) -> list[str]:
     """Read the most recent shell commands from history.
 
     Tries platform-appropriate history files in priority order.
@@ -75,7 +75,7 @@ def read_history(max_lines: int = 500) -> list[str]:
         if not path.exists():
             continue
 
-        raw_lines = _read_file_tail(path, max_lines * 2)  # read extra to account for multi-line / parsing loss
+        raw_lines = _read_file_tail(path, max_lines * 2 if max_lines > 0 else 0)
 
         # Determine if this is a zsh history file
         is_zsh = "zsh" in path.name.lower()
@@ -120,6 +120,6 @@ def read_history(max_lines: int = 500) -> list[str]:
                 unique.append(cmd)
         unique.reverse()
 
-        return unique[-max_lines:]
+        return unique[-max_lines:] if max_lines > 0 else unique
 
     return []

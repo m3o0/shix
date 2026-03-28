@@ -83,7 +83,7 @@ def ask(
     local: bool = typer.Option(False, "--local", "-l", help="Use local Ollama model instead of offline search"),
     model: str = typer.Option("qwen2.5:7b", "--model", "-m", help="Ollama model (only with --local)"),
     base_url: str = typer.Option("http://localhost:11434", "--url", "-u", help="Ollama server URL (only with --local)"),
-    history_lines: int = typer.Option(500, "--history", "-n", help="Number of history lines to read"),
+    history_lines: int = typer.Option(0, "--history", "-n", help="Number of history lines to read (0 = all)"),
 ) -> None:
     """Describe what you want to do and get command suggestions."""
     # 1. Read history
@@ -110,9 +110,17 @@ def ask(
 
 def _run_offline(history: list[str], query: str) -> None:
     """Fuzzy search through history — no model, instant results."""
-    from shix.fuzzy import fuzzy_search
+    from shix.fuzzy import fuzzy_search, _tokenize
 
     results = fuzzy_search(history, query)
+
+    # Show which query tokens had zero matches across all history
+    if results:
+        query_tokens = _tokenize(query)
+        history_blob = " ".join(history).lower()
+        missing = [t for t in query_tokens if t not in history_blob]
+        if missing:
+            console.print(f"[dim]No history matches for: {', '.join(missing)}[/dim]")
 
     items = [
         DisplayItem(command=r.command, explanation=r.reason)

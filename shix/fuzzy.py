@@ -56,17 +56,23 @@ def _score_command(command: str, query_tokens: list[str], alias_commands: set[st
     score = 0.0
     reasons: list[str] = []
 
-    # Direct token matches in command
+    # Direct token matches — substring in the full command text
     matched_tokens = [t for t in query_tokens if t in cmd_lower]
+    unmatched_tokens = [t for t in query_tokens if t not in cmd_lower]
+
     if matched_tokens:
         score += len(matched_tokens) * 3.0
         reasons.append(f"matches: {', '.join(matched_tokens)}")
+
+    # Bonus: reward commands that match ALL query tokens (multi-term relevance)
+    if len(query_tokens) > 1 and matched_tokens:
+        coverage = len(matched_tokens) / len(query_tokens)
+        score += coverage * 5.0  # full match = +5, half match = +2.5
 
     # Alias matches — only match against the first token (the actual command)
     cmd_base = cmd_tokens[0] if cmd_tokens else ""
     for alias_cmd in alias_commands:
         alias_parts = alias_cmd.lower().split()
-        # The command base must start with the alias, or all parts appear at the start
         if len(alias_parts) == 1 and cmd_base == alias_parts[0]:
             score += 2.0
             reasons.append(f"relates to: {alias_cmd}")
@@ -76,13 +82,14 @@ def _score_command(command: str, query_tokens: list[str], alias_commands: set[st
             reasons.append(f"relates to: {alias_cmd}")
             break
 
-    # Partial/substring matches — only against the first few tokens (the command itself, not args/URLs)
+    # Partial/substring matches on unmatched tokens — check against first few command tokens
     cmd_head_tokens = cmd_tokens[:3]
-    for token in query_tokens:
-        if len(token) >= 4 and token not in cmd_lower:
+    for token in unmatched_tokens:
+        if len(token) >= 4:
             for cmd_token in cmd_head_tokens:
                 if token in cmd_token or cmd_token in token:
                     score += 1.0
+                    reasons.append(f"~{token}")
                     break
 
     if score == 0:
