@@ -1,4 +1,4 @@
-# shix
+# shix 
 
 Find and run shell commands using natural language — powered by your own shell history.
 
