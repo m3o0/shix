@@ -123,7 +123,14 @@ def _run_offline(history: list[str], query: str) -> None:
 
 def _run_local(history: list[str], query: str, model: str, base_url: str) -> None:
     """Query local Ollama model for suggestions."""
-    from shix.ollama import get_suggestions
+    try:
+        from shix.ollama import get_suggestions
+    except ImportError:
+        console.print(
+            "[red]Missing dependency for --local mode.[/red]\n"
+            "Install with: [bold]pip install shix\\[local][/bold]  (or: pip install httpx)"
+        )
+        raise typer.Exit(1)
 
     with console.status("[bold cyan]Thinking..."):
         try:
