@@ -51,8 +51,10 @@ def _make_chip(text: str, index: int) -> tuple[str, str, str]:
     return top, mid, bot
 
 
-def _truncate_cmd(cmd: str, max_width: int = 50) -> str:
-    """Truncate a command for chip display."""
+def _truncate_cmd(cmd: str, max_width: int = 0) -> str:
+    """Truncate a command for display. Only truncates multi-line or very long commands."""
+    if max_width <= 0:
+        max_width = max(console.width - 10, 80)  # chip border + padding
     display = cmd.split("\n")[0]
     if len(display) > max_width:
         display = display[:max_width - 1] + "…"
