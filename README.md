@@ -7,15 +7,7 @@ shix searches your shell history to suggest relevant commands based on what you 
 ## Install
 
 ```bash
-pip install git+https://github.com/nicla97/shix.git
-```
-
-Or clone and install locally:
-
-```bash
-git clone https://github.com/nicla97/shix.git
-cd shix
-pip install -e .
+pip install shix
 ```
 
 ## Usage
