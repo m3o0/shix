@@ -12,6 +12,7 @@ from shix.history import read_history
 from shix.sanitize import sanitize
 from shix.tui import SuggestionItem, run_tui
 
+
 app = typer.Typer(
     name="shix",
     help="Find and run shell commands using natural language.",
@@ -67,7 +68,7 @@ def _run_offline(history: list[str], query: str, top: int = 5) -> None:
 
     result = run_tui(items, query, "offline", missing if missing else None)
     if result:
-        console.print(f"[green]Copied:[/green] {result}")
+        console.print(f"\n  {result}\n\n  [dim]Paste with Ctrl+V / Cmd+V to run[/dim]")
 
 
 def _run_local(history: list[str], query: str, model: str, base_url: str, top: int = 5) -> None:
@@ -109,7 +110,7 @@ def _run_local(history: list[str], query: str, model: str, base_url: str, top: i
 
     result = run_tui(items, query, f"local ({model})")
     if result:
-        console.print(f"[green]Copied:[/green] {result}")
+        console.print(f"\n  {result}\n\n  [dim]Paste with Ctrl+V / Cmd+V to run[/dim]")
 
 
 @app.callback(invoke_without_command=True)
