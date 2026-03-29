@@ -248,8 +248,19 @@ class ShixApp(App):
     def _copy_command(self, command: str) -> None:
         self.copied_command = command
         try:
-            import pyperclip
-            pyperclip.copy(command)
+            import os, subprocess, pyperclip
+            devnull = open(os.devnull, 'w')
+            old_stdout, old_stderr = os.dup(1), os.dup(2)
+            os.dup2(devnull.fileno(), 1)
+            os.dup2(devnull.fileno(), 2)
+            try:
+                pyperclip.copy(command)
+            finally:
+                os.dup2(old_stdout, 1)
+                os.dup2(old_stderr, 2)
+                os.close(old_stdout)
+                os.close(old_stderr)
+                devnull.close()
         except Exception:
             pass
 
