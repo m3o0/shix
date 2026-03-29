@@ -247,22 +247,17 @@ class ShixApp(App):
 
     def _copy_command(self, command: str) -> None:
         self.copied_command = command
+        self.clipboard_ok = False
         try:
-            import os, subprocess, pyperclip
-            devnull = open(os.devnull, 'w')
-            old_stdout, old_stderr = os.dup(1), os.dup(2)
-            os.dup2(devnull.fileno(), 1)
-            os.dup2(devnull.fileno(), 2)
-            try:
-                pyperclip.copy(command)
-            finally:
-                os.dup2(old_stdout, 1)
-                os.dup2(old_stderr, 2)
-                os.close(old_stdout)
-                os.close(old_stderr)
-                devnull.close()
+            import os, platform, pyperclip
+            # On macOS/Windows clipboard is always available
+            # On Linux, only try if a display server is present
+            if platform.system() == "Linux" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+                raise RuntimeError("No display")
+            pyperclip.copy(command)
+            self.clipboard_ok = True
         except Exception:
-            pass
+            self.clipboard_ok = False
 
         status = self.query_one("#status-bar", Label)
         status.update(f"[bold #ffffff]Copied:[/] {command}")
@@ -278,7 +273,8 @@ def run_tui(
     query: str,
     mode: str,
     missing_tokens: list[str] | None = None,
-) -> str | None:
-    """Run the TUI and return the copied command (or None)."""
+) -> tuple[str | None, bool]:
+    """Run the TUI and return (command, clipboard_ok)."""
     app = ShixApp(items, query, mode, missing_tokens)
-    return app.run()
+    result = app.run()
+    return result, getattr(app, "clipboard_ok", False)

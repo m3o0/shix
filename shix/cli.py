@@ -66,9 +66,10 @@ def _run_offline(history: list[str], query: str, top: int = 5) -> None:
         for r in results
     ]
 
-    result = run_tui(items, query, "offline", missing if missing else None)
+    result, clipboard_ok = run_tui(items, query, "offline", missing if missing else None)
     if result:
-        console.print(f"\n  {result}\n\n  [dim]Paste with Ctrl+V / Cmd+V to run[/dim]")
+        hint = "Paste with Ctrl+V / Cmd+V to run" if clipboard_ok else "Copy the command above to run"
+        console.print(f"\n  {result}\n\n  [dim]{hint}[/dim]")
 
 
 def _run_local(history: list[str], query: str, model: str, base_url: str, top: int = 5) -> None:
@@ -108,9 +109,10 @@ def _run_local(history: list[str], query: str, model: str, base_url: str, top: i
         for s in suggestions
     ]
 
-    result = run_tui(items, query, f"local ({model})")
+    result, clipboard_ok = run_tui(items, query, f"local ({model})")
     if result:
-        console.print(f"\n  {result}\n\n  [dim]Paste with Ctrl+V / Cmd+V to run[/dim]")
+        hint = "Paste with Ctrl+V / Cmd+V to run" if clipboard_ok else "Copy the command above to run"
+        console.print(f"\n  {result}\n\n  [dim]{hint}[/dim]")
 
 
 @app.callback(invoke_without_command=True)
