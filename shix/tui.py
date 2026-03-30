@@ -32,7 +32,7 @@ class CommandPill(Static, can_focus=True):
             super().__init__()
 
     def __init__(self, command: str, **kwargs) -> None:
-        super().__init__(command, **kwargs)
+        super().__init__(command, markup=False, **kwargs)
         self.command = command
 
     def on_enter(self, event) -> None:

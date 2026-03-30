@@ -9,7 +9,6 @@ from rich.console import Console
 
 from shix import __version__
 from shix.history import read_history
-from shix.sanitize import sanitize
 from shix.tui import SuggestionItem, run_tui
 
 
@@ -26,9 +25,6 @@ console = Console()
 def ask(
     query: str = typer.Argument(..., help="Describe what you want to do"),
     top: int = typer.Option(5, "--top", "-t", help="Number of suggestions to show"),
-    local: bool = typer.Option(False, "--local", "-l", help="Use local Ollama model instead of offline search"),
-    model: str = typer.Option("qwen2.5:7b", "--model", "-m", help="Ollama model (only with --local)"),
-    base_url: str = typer.Option("http://localhost:11434", "--url", "-u", help="Ollama server URL (only with --local)"),
     history_lines: int = typer.Option(0, "--history", "-n", help="Number of history lines to read (0 = all)"),
 ) -> None:
     """Describe what you want to do and get command suggestions."""
@@ -37,23 +33,8 @@ def ask(
 
     if not history:
         console.print("[yellow]  No shell history found.[/yellow]")
-        if local:
-            history = []
-        else:
-            console.print("[yellow]  Offline mode needs history. Try --local for AI suggestions.[/yellow]")
-            raise typer.Exit(1)
+        raise typer.Exit(1)
 
-    clean_history = sanitize(history)
-
-
-    if local:
-        _run_local(clean_history, query, model, base_url, top)
-    else:
-        _run_offline(history, query, top)
-
-
-def _run_offline(history: list[str], query: str, top: int = 5) -> None:
-    """Fuzzy search through history — no model, instant results."""
     from shix.fuzzy import fuzzy_search, _tokenize
 
     results = fuzzy_search(history, query, max_results=top)
@@ -67,50 +48,7 @@ def _run_offline(history: list[str], query: str, top: int = 5) -> None:
         for r in results
     ]
 
-    result, clipboard_ok = run_tui(items, query, "offline", missing if missing else None)
-    if result:
-        hint = "Paste with Ctrl+V / Cmd+V to run" if clipboard_ok else "Copy the command above to run"
-        console.print(f"\n  {result}\n\n  [dim]{hint}[/dim]")
-
-
-def _run_local(history: list[str], query: str, model: str, base_url: str, top: int = 5) -> None:
-    """Query local Ollama model for suggestions."""
-    try:
-        from shix.ollama import get_suggestions
-    except ImportError:
-        console.print(
-            "[red]  Missing dependency for --local mode.[/red]\n"
-            "  Install with: [bold]pip install shix\\[local][/bold]  (or: pip install httpx)"
-        )
-        raise typer.Exit(1)
-
-    with console.status("[bold cyan]  Thinking..."):
-        try:
-            suggestions = get_suggestions(
-                history=history,
-                query=query,
-                model=model,
-                base_url=base_url,
-                count=top,
-            )
-        except Exception as e:
-            error_msg = str(e)
-            if "ConnectError" in type(e).__name__ or "Connection" in error_msg:
-                console.print(
-                    "[red]  Could not connect to Ollama.[/red]\n"
-                    "  Make sure Ollama is running: [bold]ollama serve[/bold]\n"
-                    f"  And that the model is pulled: [bold]ollama pull {model}[/bold]"
-                )
-            else:
-                console.print(f"[red]  Error: {error_msg}[/red]")
-            raise typer.Exit(1)
-
-    items = [
-        SuggestionItem(command=s.command, explanation=s.explanation)
-        for s in suggestions
-    ]
-
-    result, clipboard_ok = run_tui(items, query, f"local ({model})")
+    result, clipboard_ok = run_tui(items, query, "search", missing if missing else None)
     if result:
         hint = "Paste with Ctrl+V / Cmd+V to run" if clipboard_ok else "Copy the command above to run"
         console.print(f"\n  {result}\n\n  [dim]{hint}[/dim]")

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shix"
-version = "0.1.8"
-description = "Find and run shell commands using natural language, powered by your shell history and local AI"
+version = "0.1.9"
+description = "Find and run shell commands using natural language, powered by your shell history"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -33,9 +33,6 @@ dependencies = [
     "textual>=0.50.0",
     "pyperclip>=1.8.0",
 ]
-
-[project.optional-dependencies]
-local = ["httpx>=0.25.0"]
 
 [project.urls]
 Homepage = "https://github.com/m3o0/shix"
