@@ -99,7 +99,7 @@ def _score_command(command: str, query_tokens: list[str], alias_commands: set[st
     return score, reason
 
 
-def fuzzy_search(history: list[str], query: str, max_results: int = 3) -> list[FuzzyResult]:
+def fuzzy_search(history: list[str], query: str, max_results: int = 3, freq: dict[str, int] | None = None) -> list[FuzzyResult]:
     """Search shell history using fuzzy keyword matching.
 
     Matches query tokens against commands and uses alias mappings
@@ -116,23 +116,25 @@ def fuzzy_search(history: list[str], query: str, max_results: int = 3) -> list[F
             if token in alias_key or alias_key in token:
                 alias_commands.update(commands)
 
-    # Score all history commands
+    # Score unique commands
     scored: list[FuzzyResult] = []
+    seen: set[str] = set()
     for cmd in history:
+        if cmd in seen:
+            continue
+        seen.add(cmd)
         score, reason = _score_command(cmd, query_tokens, alias_commands)
         if score > 0:
+            # Frequency bonus: log scale so 10x usage doesn't dominate relevance
+            if freq:
+                import math
+                count = freq.get(cmd, 1)
+                if count > 1:
+                    freq_bonus = math.log2(count)
+                    score += freq_bonus
             scored.append(FuzzyResult(command=cmd, score=score, reason=reason))
 
-    # Sort by score descending, deduplicate
+    # Sort by score descending
     scored.sort(key=lambda r: r.score, reverse=True)
 
-    seen: set[str] = set()
-    results: list[FuzzyResult] = []
-    for r in scored:
-        if r.command not in seen:
-            seen.add(r.command)
-            results.append(r)
-            if len(results) >= max_results:
-                break
-
-    return results
+    return scored[:max_results]

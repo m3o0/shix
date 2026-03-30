@@ -29,7 +29,7 @@ def ask(
 ) -> None:
     """Describe what you want to do and get command suggestions."""
     with console.status("[bold cyan]  Reading shell history..."):
-        history = read_history(max_lines=history_lines)
+        history, freq = read_history(max_lines=history_lines)
 
     if not history:
         console.print("[yellow]  No shell history found.[/yellow]")
@@ -37,7 +37,7 @@ def ask(
 
     from shix.fuzzy import fuzzy_search, _tokenize
 
-    results = fuzzy_search(history, query, max_results=top)
+    results = fuzzy_search(history, query, max_results=top, freq=freq)
 
     query_tokens = _tokenize(query)
     history_blob = " ".join(history).lower()

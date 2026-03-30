@@ -116,6 +116,10 @@ def read_history(max_lines: int = 0) -> list[str]:
         import re
         commands = [re.sub(r'\x1b?\[200~|\x1b?\[201~|\x1b\[\?2004[hl]', '', cmd) for cmd in commands]
 
+        # Count frequency before deduplication
+        from collections import Counter
+        freq = Counter(commands)
+
         # Deduplicate keeping last occurrence (most recent)
         seen: set[str] = set()
         unique: list[str] = []
@@ -125,6 +129,8 @@ def read_history(max_lines: int = 0) -> list[str]:
                 unique.append(cmd)
         unique.reverse()
 
-        return unique[-max_lines:] if max_lines > 0 else unique
+        result = unique[-max_lines:] if max_lines > 0 else unique
+        return result, freq
 
-    return []
+    from collections import Counter
+    return [], Counter()
