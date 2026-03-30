@@ -249,24 +249,16 @@ class ShixApp(App):
         self.clipboard_ok = False
         try:
             import os, platform, subprocess
-            # On Linux without a display server, skip clipboard entirely
-            if platform.system() == "Linux" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
-                raise RuntimeError("No display")
-            # On macOS, use pbcopy directly
-            if platform.system() == "Darwin":
-                subprocess.run(["pbcopy"], input=command.encode(), check=True)
+            system = platform.system()
+            if system == "Darwin":
+                subprocess.run(["pbcopy"], input=command.encode(), check=True,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.clipboard_ok = True
-            elif platform.system() == "Windows":
-                subprocess.run(["clip"], input=command.encode(), check=True)
+            elif system == "Windows":
+                subprocess.run(["clip"], input=command.encode(), check=True,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.clipboard_ok = True
-            else:
-                # Linux with display — try xclip
-                subprocess.run(
-                    ["xclip", "-selection", "clipboard"],
-                    input=command.encode(), check=True,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-                self.clipboard_ok = True
+            # Skip clipboard on Linux entirely — too many edge cases with SSH/xclip
         except Exception:
             self.clipboard_ok = False
 
