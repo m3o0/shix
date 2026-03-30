@@ -32,8 +32,7 @@ class CommandPill(Static, can_focus=True):
             super().__init__()
 
     def __init__(self, command: str, **kwargs) -> None:
-        display = command.split("\n")[0]
-        super().__init__(display, **kwargs)
+        super().__init__(command, **kwargs)
         self.command = command
 
     def on_enter(self, event) -> None:
@@ -48,7 +47,7 @@ class ResultRow(Horizontal):
 
     DEFAULT_CSS = """
     ResultRow {
-        height: 1;
+        height: auto;
         width: 100%;
         margin-bottom: 1;
     }
@@ -124,7 +123,7 @@ class ShixApp(App):
 
     CommandPill {
         width: auto;
-        height: 1;
+        height: auto;
         max-width: 1fr;
         padding: 0 2;
         color: #8b949e;
