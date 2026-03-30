@@ -248,13 +248,25 @@ class ShixApp(App):
         self.copied_command = command
         self.clipboard_ok = False
         try:
-            import os, platform, pyperclip
-            # On macOS/Windows clipboard is always available
-            # On Linux, only try if a display server is present
+            import os, platform, subprocess
+            # On Linux without a display server, skip clipboard entirely
             if platform.system() == "Linux" and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
                 raise RuntimeError("No display")
-            pyperclip.copy(command)
-            self.clipboard_ok = True
+            # On macOS, use pbcopy directly
+            if platform.system() == "Darwin":
+                subprocess.run(["pbcopy"], input=command.encode(), check=True)
+                self.clipboard_ok = True
+            elif platform.system() == "Windows":
+                subprocess.run(["clip"], input=command.encode(), check=True)
+                self.clipboard_ok = True
+            else:
+                # Linux with display — try xclip
+                subprocess.run(
+                    ["xclip", "-selection", "clipboard"],
+                    input=command.encode(), check=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                self.clipboard_ok = True
         except Exception:
             self.clipboard_ok = False
 
