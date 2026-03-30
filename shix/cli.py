@@ -45,6 +45,7 @@ def ask(
 
     clean_history = sanitize(history)
 
+
     if local:
         _run_local(clean_history, query, model, base_url, top)
     else:
