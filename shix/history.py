@@ -114,7 +114,7 @@ def read_history(max_lines: int = 0) -> list[str]:
         # Strip terminal escape sequences (e.g. bracketed paste markers)
         # These are never intentional parts of commands
         import re
-        commands = [re.sub(r'\x1b\[\?2004[hl]|\[200~|\[201~', '', cmd) for cmd in commands]
+        commands = [re.sub(r'\x1b?\[200~|\x1b?\[201~|\x1b\[\?2004[hl]', '', cmd) for cmd in commands]
 
         # Deduplicate keeping last occurrence (most recent)
         seen: set[str] = set()
