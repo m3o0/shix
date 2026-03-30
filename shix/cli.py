@@ -49,6 +49,12 @@ def ask(
     ]
 
     result, clipboard_ok = run_tui(items, query, "search", missing if missing else None)
+
+    # Reset bracketed paste mode that Textual may leave enabled
+    import sys
+    sys.stdout.write("\033[?2004l")
+    sys.stdout.flush()
+
     if result:
         hint = "Paste with Ctrl+V / Cmd+V to run" if clipboard_ok else "Copy the command above to run"
         console.print(f"\n  {result}\n\n  [dim]{hint}[/dim]")
