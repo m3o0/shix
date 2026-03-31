@@ -34,7 +34,7 @@ An interactive TUI opens where you can:
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--top N` | `-t` | Number of suggestions (default: 5) |
+| `--top N` | `-t` | Number of suggestions (default: 10) |
 | `--history N` | `-n` | Limit history lines (0 = all, default: 0) |
 | `--version` | `-v` | Show version |
 

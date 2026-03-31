@@ -24,7 +24,7 @@ console = Console()
 @app.command()
 def ask(
     query: str = typer.Argument(..., help="Describe what you want to do"),
-    top: int = typer.Option(5, "--top", "-t", help="Number of suggestions to show"),
+    top: int = typer.Option(10, "--top", "-t", help="Number of suggestions to show"),
     history_lines: int = typer.Option(0, "--history", "-n", help="Number of history lines to read (0 = all)"),
 ) -> None:
     """Describe what you want to do and get command suggestions."""
